@@ -28,11 +28,9 @@ model_args = dict(
 
 data_args = dict(
     data_path=[
-        "/path/DrivePI_Data/drivepi_captions/nuscenes_train_annotation_front_28130_0722.json",  # BEV feature pickle file
-        "/path/DrivePI_Data/drivepi_captions/nuscenes_train_annotation_back_28130_0722.json",  # BEV feature pickle file
-        "/path/DrivePI_Data/drivepi_captions/nuscenes_train_annotation_all_28130_0722.json",  # BEV feature pickle file
+         "/home/renault/repo/dataset/nuscenes/LiDAR-LLM-Nu-Caption/train_plain_llava.json"
     ],
-    bev_feature_folder="/path/DrivePI_Data/unilion_bev_feats_train/",
+    bev_feature_folder="/home/renault/repo/dataset/nuscenes/unilion_bev_feats_train/",
     lazy_preprocess=True,
     is_multimodal=False,
     image_aspect_ratio='square',
@@ -41,7 +39,7 @@ data_args = dict(
 
 
 training_args = dict(
-    output_dir="/path/work_dirs/emova_llava-qwen2_5-0.5b-bev-featurev2-sms-pretrain0722_three/",
+    output_dir="/home/renault/repo/DrivePI/work_dirs/emova_llava-qwen2_5-0.5b-bev-featurev2-sms-pretrain0722_three/",
     deepspeed="./scripts/zero3.json",
     bf16=True,
     tf32=True,
@@ -51,7 +49,7 @@ training_args = dict(
     per_device_eval_batch_size=4,
     gradient_accumulation_steps=32,
     evaluation_strategy="no",
-    save_strategy="steps",
+    save_strategy="epoch",
     save_steps=24000,
     save_total_limit=1,
     learning_rate=1e-3,
@@ -62,5 +60,6 @@ training_args = dict(
     model_max_length=4096+1024,
     gradient_checkpointing=True,
     dataloader_num_workers=4,
+    #report_to="tensorboard",
     report_to="tensorboard",
 )

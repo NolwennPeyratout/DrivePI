@@ -1,7 +1,5 @@
 **__pycache__**
-**build**
 **egg-info**
-**dist**
 *.pyc
 venv/
 *.idea/
@@ -13,3 +11,4 @@ venv/
 .DS_Store
 output
 version.py
+work_dirs/

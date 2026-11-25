@@ -704,7 +704,7 @@ class EmovaQwen2ForCausalLM(Qwen2ForCausalLM, EmovaMetaForCausalLM):
         occ_loss = None
         planning_results = None
         planning_loss = None
-        text_loss = None
+        text_loss = llm_output.loss
 
         # If we have hidden states, we can generate occupancy grid
         if hasattr(llm_output, 'hidden_states') and llm_output.hidden_states is not None:

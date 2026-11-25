@@ -12,7 +12,7 @@ from torch.utils.data import Dataset
 from emova.utils import rank0_print
 
 from .preprocess import *
-from ..constants import IGNORE_INDEX
+from ..constants import DEFAULT_IMAGE_TOKEN, IGNORE_INDEX
 import numpy as np
 
 
@@ -176,9 +176,37 @@ class LazyFeatureDataset(Dataset):
             sources = preprocess_multimodal(
                 copy.deepcopy([e["conversations"] for e in sources]),
                 self.data_args)
+
+            """
+            conversations = copy.deepcopy([e["conversations"] for e in sources])
+            for conversation in conversations:
+                image_token_kept = False
+                for message in conversation:
+                    value = message["value"]
+                    if DEFAULT_IMAGE_TOKEN not in value:
+                        continue
+
+                    if image_token_kept:
+                        message["value"] = value.replace(DEFAULT_IMAGE_TOKEN, "")
+                    else:
+                        before, _, after = value.partition(DEFAULT_IMAGE_TOKEN)
+                        message["value"] = (
+                            before
+                            + DEFAULT_IMAGE_TOKEN
+                            + after.replace(DEFAULT_IMAGE_TOKEN, "")
+                        )
+                        image_token_kept = True
+
+                if not image_token_kept:
+                    raise ValueError(
+                        "Feature-backed samples must contain an <image> marker "
+                        "in their conversations."
+                    )
+
+            sources = preprocess_multimodal(conversations, self.data_args)
+            """
         else:
             sources = copy.deepcopy([e["conversations"] for e in sources])
-
         data_dict = preprocess(
             sources,
             self.tokenizer,

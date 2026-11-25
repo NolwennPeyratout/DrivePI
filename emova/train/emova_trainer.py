@@ -1,4 +1,5 @@
 import os
+import json
 import time
 
 import torch
@@ -309,6 +310,18 @@ class EMOVATrainer(Trainer):
     def _save(self, output_dir: Optional[str] = None, state_dict=None):
         super(EMOVATrainer, self)._save(output_dir, state_dict)
 
+    def log(self, logs: Dict[str, float], start_time: Optional[float] = None) -> None:
+        super().log(logs, start_time)
+
+        if not self.is_world_process_zero():
+            return
+
+        os.makedirs(self.args.logging_dir, exist_ok=True)
+        log_path = os.path.join(self.args.logging_dir, "training_log.jsonl")
+        record = {**logs, "step": self.state.global_step}
+        with open(log_path, "a", encoding="utf-8") as log_file:
+            log_file.write(json.dumps(record, ensure_ascii=False) + "\n")
+
     def training_step(self, model: nn.Module, inputs: Dict[str, Union[torch.Tensor, Any]], num_items_in_batch=None) -> torch.Tensor:
         model.train()
         # batch_token_names = inputs['token_name'].clone()
@@ -326,33 +339,17 @@ class EMOVATrainer(Trainer):
         with self.compute_loss_context_manager():
             loss, outputs = self.compute_loss(model, inputs, return_outputs=True)
 
-            # 捕occ损失，如果存在的话  # 2025.8.5
-            if hasattr(outputs, 'occ_loss'):
-                if outputs.occ_loss is not None:
-                    self.occ_loss = outputs.occ_loss.detach().mean() if self.args.n_gpu > 1 else outputs.occ_loss.detach()
+            for loss_name in ("occ_loss", "planning_loss", "text_loss"):
+                output_loss = getattr(outputs, loss_name, None)
+                if output_loss is None:
+                    setattr(self, loss_name, None)
                 else:
-                    self.occ_loss = torch.tensor(0.0).to(self.args.device)
-            else:
-                self.occ_loss = torch.tensor(0.0).to(self.args.device)
-
-
-            # 捕获planning损失，如果存在的话
-            if hasattr(outputs, 'planning_loss'):
-                if outputs.planning_loss is not None:
-                    self.planning_loss = outputs.planning_loss.detach().mean() if self.args.n_gpu > 1 else outputs.planning_loss.detach()
-                else:
-                    self.planning_loss = torch.tensor(0.0).to(self.args.device)
-            else:
-                self.planning_loss = torch.tensor(0.0).to(self.args.device)
-                
-            # 捕text损失，如果存在的话  # 2025.8.5
-            if hasattr(outputs, 'text_loss'):
-                if outputs.text_loss is not None:
-                    self.text_loss = outputs.text_loss.detach().mean() if self.args.n_gpu > 1 else outputs.text_loss.detach()
-                else:
-                    self.text_loss = torch.tensor(0.0).to(self.args.device)
-            else:
-                self.text_loss = torch.tensor(0.0).to(self.args.device)
+                    detached_loss = output_loss.detach()
+                    setattr(
+                        self,
+                        loss_name,
+                        detached_loss.mean() if self.args.n_gpu > 1 else detached_loss,
+                    )
                 
  
         del inputs
@@ -397,15 +394,15 @@ class EMOVATrainer(Trainer):
 
             logs["loss"] = round(tr_loss_scalar / (self.state.global_step - self._globalstep_last_logged), 4)
 
-            if hasattr(self, 'occ_loss'):
+            if self.occ_loss is not None:
                 occ_loss = self._nested_gather(self.occ_loss).mean().item()
                 logs["occ_loss"] = round(occ_loss, 4)
                 
-            if hasattr(self, 'planning_loss'):
+            if self.planning_loss is not None:
                 planning_loss = self._nested_gather(self.planning_loss).mean().item()
                 logs["planning_loss"] = round(planning_loss, 4)
 
-            if hasattr(self, 'text_loss'):
+            if self.text_loss is not None:
                 text_loss = self._nested_gather(self.text_loss).mean().item()
                 logs["text_loss"] = round(text_loss, 4)
                 

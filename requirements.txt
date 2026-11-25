@@ -80,6 +80,7 @@ safetensors==0.6.2
 scikit-learn==1.2.2
 scipy==1.15.3
 sentencepiece==0.2.0
+setuptools==65.0.0
 shapely==2.1.2
 shortuuid==1.0.13
 six==1.17.0
@@ -93,9 +94,9 @@ tiktoken==0.11.0
 timm==0.9.12
 tokenizers==0.21.4
 tomli==2.2.1
-torch==2.6.0+cu124
-torchaudio==2.6.0+cu124
-torchvision==0.21.0+cu124
+torch==2.6.0
+torchaudio==2.6.0
+torchvision==0.21.0
 tqdm==4.67.1
 # Editable install with no version control (transformers==4.50.0)
 transformers==4.50.0
